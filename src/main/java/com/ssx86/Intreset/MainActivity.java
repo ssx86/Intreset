@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
             pm25Text.setText(data.getString("pm2.5"));
         }
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,40 +53,25 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
-                HttpURLConnection conn = null;
+                String resultData = HTTPHelper.GetFromURL("http://zx.bjmemc.com.cn/web/Service.ashx");
                 try {
-                    URL url = new URL("http://zx.bjmemc.com.cn/web/Service.ashx?");
-
-                    conn = (HttpURLConnection) url.openConnection();
-
-                    conn.setConnectTimeout(15000);
-                    conn.setRequestMethod("GET");
-
-                    conn.setDoInput(true); //允许输入流，即允许下载
-                    conn.setDoOutput(true); //允许输出流，即允许上传
-                    conn.setUseCaches(false); //不使用缓冲
-                    conn.setRequestMethod("GET"); //使用get请求
-                    conn.connect();
-                    InputStream is = conn.getInputStream();   //获取输入流，此时才真正建立链接
-                    InputStreamReader isr = new InputStreamReader(is);
-                    BufferedReader bufferReader = new BufferedReader(isr);
-                    String inputLine = "";
-                    String resultData = new String();
-                    while ((inputLine = bufferReader.readLine()) != null) {
-                        resultData += inputLine + "\n";
-                    }
-                    Log.i(TAG, resultData);
-
                     JSONTokener parser = new JSONTokener(resultData);
-                    JSONObject root = (JSONObject) parser.nextValue();
+                    JSONObject root = null;
+
+                    root = (JSONObject) parser.nextValue();
+
                     JSONArray table = root.getJSONArray("Table");
+
 
                     String pm25 = "0";
                     for (int i = 0; i < table.length(); i++) {
                         JSONObject obj = (JSONObject) table.get(i);
+
                         Log.i(TAG, obj.toString());
                         String iaqi = obj.getString("IAQI");
+
                         String pollutant = obj.getString("Pollutant");
+
                         if (pollutant.equals("PM2.5")) {
                             pm25 = iaqi;
                         }
@@ -95,18 +81,10 @@ public class MainActivity extends AppCompatActivity {
                     Message msg = new Message();
                     msg.setData(data);
                     handler.sendMessage(msg);
-
-
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                finally {
-                    conn.disconnect();
-                }
+
             }
         }.start();
     }
